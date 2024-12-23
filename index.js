@@ -7,7 +7,7 @@ app.use(cors())
 app.use(express.json())
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = "mongodb+srv://volunteer-hub:nb3Uoob7Qhhh6Urx@cluster0.ig6ro.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -29,11 +29,36 @@ async function run() {
     await client.connect();
     // Send a ping to confirm a successful connection
 
-
+   
+    app.post('/posts',async(req,res)=>{
+        const newposts = req.body
+        const result = await volunteerdatabase.insertOne(newposts)
+        res.send(result)
+    })
     app.get('/posts',async(req,res)=>{
-        const cursor = volunteerdatabase.find()
+        const { limit } = req.query;  
+      
+
+  
+      let cursor;
+      const sortCriteria = {deadline: 1 }
+      if (limit) {
+          cursor =volunteerdatabase.find().sort(sortCriteria).limit(parseInt(limit));  
+      } 
+       else{
+        cursor = volunteerdatabase.find()
+
+       } 
       const result = await cursor.toArray();
       res.send(result)
+    })
+    
+    app.get('/posts/:id',async(req,res)=>{
+        const id = req.params.id
+        const quary =  {_id: new ObjectId(id)}
+        const result = await volunteerdatabase.findOne(quary)
+        res.send(result)
+
     })
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
