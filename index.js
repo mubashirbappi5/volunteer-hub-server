@@ -23,6 +23,7 @@ async function run() {
   try {
 
     const volunteerdatabase = client.db("volunteerdb").collection("volunteerneedposts");
+    const BeVolunteerdatabase = client.db("BEvolunteerdb").collection("BeAvolunteer");
      
 
     // Connect the client to the server	(optional starting in v4.7)
@@ -93,7 +94,17 @@ async function run() {
       const result = await volunteerdatabase.updateOne(filter, updateposts, options)
       res.send(result)
     })
-    
+    app.post('/volunteer',async(req,res)=>{
+      const volunteer = req.body
+      const result = await  BeVolunteerdatabase.insertOne(volunteer)
+      res.send(result)
+  })
+    app.get('/vounteer',async(req,res)=>{
+      const cursor =BeVolunteerdatabase.find()
+      const result = await cursor.toArray()
+      res.send(result)
+      
+    })
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
