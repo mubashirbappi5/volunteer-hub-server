@@ -36,21 +36,24 @@ async function run() {
         res.send(result)
     })
     app.get('/posts',async(req,res)=>{
-        const { limit } = req.query;  
-      
 
-  
-      let cursor;
-      const sortCriteria = {deadline: 1 }
-      if (limit) {
-          cursor =volunteerdatabase.find().sort(sortCriteria).limit(parseInt(limit));  
-      } 
-       else{
-        cursor = volunteerdatabase.find()
+      const { email, limit } = req.query; 
+        let query = {};
+        let cursor = volunteerdatabase.find(query).sort({ deadline: 1 }); 
+        
+        if (email) {
+          query.organizer_email = email; 
+        }
 
-       } 
-      const result = await cursor.toArray();
-      res.send(result)
+       
+
+        if (limit) {
+          cursor = cursor.limit(parseInt(limit)); 
+        }
+
+        const result = await cursor.toArray(); 
+        res.send(result); 
+    
     })
     
     app.get('/posts/:id',async(req,res)=>{
@@ -60,6 +63,7 @@ async function run() {
         res.send(result)
 
     })
+    
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
