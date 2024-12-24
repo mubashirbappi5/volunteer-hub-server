@@ -39,8 +39,8 @@ async function run() {
 
       const { email, limit } = req.query; 
         let query = {};
-        let cursor = volunteerdatabase.find(query).sort({ deadline: 1 }); 
-        
+        let cursor = volunteerdatabase.find(query)
+
         if (email) {
           query.organizer_email = email; 
         }
@@ -48,7 +48,8 @@ async function run() {
        
 
         if (limit) {
-          cursor = cursor.limit(parseInt(limit)); 
+           
+          cursor = volunteerdatabase.find(query).sort({ deadline: 1 }).limit(parseInt(limit)); 
         }
 
         const result = await cursor.toArray(); 
