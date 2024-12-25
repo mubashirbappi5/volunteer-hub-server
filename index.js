@@ -96,14 +96,28 @@ async function run() {
     })
     app.post('/volunteer',async(req,res)=>{
       const volunteer = req.body
+      const postId = volunteer.postId
       const result = await  BeVolunteerdatabase.insertOne(volunteer)
+      const filter = { _id: new ObjectId(postId) };
+      const update = { $inc: { volunteers_needed: -1 } };
+      const updateneed = await volunteerdatabase.updateOne(filter, update);
       res.send(result)
   })
-    app.get('/vounteer',async(req,res)=>{
-      const cursor =BeVolunteerdatabase.find()
+    app.get('/volunteer',async(req,res)=>{
+      const {email} = req.query
+      const query ={ volunteer_email: email };
+      const cursor = BeVolunteerdatabase.find(query)
       const result = await cursor.toArray()
       res.send(result)
       
+    })
+    app.delete('/volunteer/:id',async(req,res)=>{
+      const id = req.params.id
+      
+      const quary = {_id: new ObjectId(id)}
+      const result = await BeVolunteerdatabase.deleteOne(quary)
+      
+      res.send(result)
     })
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
