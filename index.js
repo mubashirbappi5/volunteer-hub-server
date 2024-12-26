@@ -1,10 +1,36 @@
+require('dotenv').config();
 const express = require('express')
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
+
 const cors = require('cors')
 
 const app = express()
 const port = process.env.PORT ||8000
-app.use(cors())
+
+app.use(cookieParser());
+app.use(cors({
+  origin:['http://localhost:5173'],
+  credentials:true
+}
+))
 app.use(express.json())
+
+const verifyToken = (req,res,next)=>{
+  const token = req.cookies?.token;
+  console.log(token)
+  if (!token) {
+    return res.status(401).send({ message: 'unauthorized access' });
+}
+jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+  if (err) {
+      return res.status(401).send({ message: 'unauthorized access' });
+  }
+  req.user = decoded;
+  next();
+})
+  
+}
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -36,22 +62,30 @@ async function run() {
         const result = await volunteerdatabase.insertOne(newposts)
         res.send(result)
     })
-    app.get('/posts',async(req,res)=>{
+    app.get('/posts', async(req,res)=>{
 
       const { email, limit } = req.query; 
-        let query = {};
-        let cursor = volunteerdatabase.find(query)
-
-        if (email) {
-          query.organizer_email = email; 
-        }
-
        
 
-        if (limit) {
-           
-          cursor = volunteerdatabase.find(query).sort({ deadline: 1 }).limit(parseInt(limit)); 
+        if (email) {
+          return verifyToken(req, res, async () => {
+          
+            let query = { organizer_email: email };
+            let cursor = volunteerdatabase.find(query);
+            if (req.user.email !== req.query.email) {
+              return res.status(403).send({ message: 'forbidden access' })
+          }
+      
+            if (limit) {
+              cursor = volunteerdatabase.find(query).sort({ deadline: 1 }).limit(parseInt(limit)); 
+            }
+      
+            const result = await cursor.toArray(); 
+            res.send(result); 
+          });
         }
+        let query = {};
+        let cursor = volunteerdatabase.find(query);
 
         const result = await cursor.toArray(); 
         res.send(result); 
@@ -119,6 +153,27 @@ async function run() {
       
       res.send(result)
     })
+
+    //  Auth Api
+
+   app.post('/jwt',async(req,res)=>{
+    const user = req.body
+    const token = jwt.sign(user, process.env.SECRET_KEY,{expiresIn:'10h'})
+    res
+     .cookie('token',token,{
+      httpOnly:true,
+      secure:false,
+     })
+     .send({success: true})
+   })
+   app.post('/signout',async(req,res)=>{
+    res.clearCookie('token',{
+      httpOnly:true,
+      secure:false,
+    })
+    .send({success: true})
+   })
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
