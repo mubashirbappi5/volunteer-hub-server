@@ -57,8 +57,11 @@ async function run() {
     // Send a ping to confirm a successful connection
 
    
-    app.post('/posts',async(req,res)=>{
+    app.post('/posts', verifyToken,async(req,res)=>{
         const newposts = req.body
+        if (req.user.email !== newposts.organizer_email) {
+          return res.status(403).send({ message: 'forbidden access' });
+        }
         const result = await volunteerdatabase.insertOne(newposts)
         res.send(result)
     })
@@ -99,15 +102,27 @@ async function run() {
         res.send(result)
 
     })
-    app.delete('/posts/:id',async(req,res)=>{
+    app.delete('/posts/:id',verifyToken,async(req,res)=>{
       const id = req.params.id
       const quary = {_id: new ObjectId(id)}
+      const post = await volunteerdatabase.findOne(quary);
+      if(post){
+        if (req.user.email !== post.organizer_email) {
+          return res.status(403).send({ message: 'forbidden access' });
+        }
+      }
       const result = await volunteerdatabase.deleteOne(quary)
       res.send(result)
     })
-    app.put('/posts/:id',async(req,res)=>{
+    app.put('/posts/:id',verifyToken,async(req,res)=>{
       const id = req.params.id
       const filter = {_id:new ObjectId(id)}
+      const post = await volunteerdatabase.findOne(filter);
+      if(post){
+        if (req.user.email !== post.organizer_email) {
+          return res.status(403).send({ message: 'forbidden access' });
+        }
+      }
       const options = { upsert: true };
       const updatepost = req.body
       const updateposts ={
@@ -128,8 +143,11 @@ async function run() {
       const result = await volunteerdatabase.updateOne(filter, updateposts, options)
       res.send(result)
     })
-    app.post('/volunteer',async(req,res)=>{
+    app.post('/volunteer',verifyToken,async(req,res)=>{
       const volunteer = req.body
+      if (req.user.email !== volunteer.volunteer_email) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
       const postId = volunteer.postId
       const result = await  BeVolunteerdatabase.insertOne(volunteer)
       const filter = { _id: new ObjectId(postId) };
@@ -137,18 +155,25 @@ async function run() {
       const updateneed = await volunteerdatabase.updateOne(filter, update);
       res.send(result)
   })
-    app.get('/volunteer',async(req,res)=>{
+    app.get('/volunteer',verifyToken ,async(req,res)=>{
       const {email} = req.query
       const query ={ volunteer_email: email };
+      if (req.user.email !== req.query.email) {
+        return res.status(403).send({ message: 'forbidden access' })
+    }
       const cursor = BeVolunteerdatabase.find(query)
       const result = await cursor.toArray()
       res.send(result)
       
     })
-    app.delete('/volunteer/:id',async(req,res)=>{
+    app.delete('/volunteer/:id',verifyToken,async(req,res)=>{
       const id = req.params.id
-      
       const quary = {_id: new ObjectId(id)}
+      const volunteer =  await BeVolunteerdatabase.findOne(quary )
+      if (req.user.email !== volunteer.volunteer_email) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      
       const result = await BeVolunteerdatabase.deleteOne(quary)
       
       res.send(result)
