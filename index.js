@@ -10,7 +10,7 @@ const port = process.env.PORT ||8000
 
 app.use(cookieParser());
 app.use(cors({
-  origin:['http://localhost:5173'],
+  origin:['http://localhost:5174'],
   credentials:true
 }
 ))
@@ -79,9 +79,7 @@ async function run() {
               return res.status(403).send({ message: 'forbidden access' })
           }
       
-            if (limit) {
-              cursor = volunteerdatabase.find(query).sort({ deadline: 1 }).limit(parseInt(limit)); 
-            }
+            
       
             const result = await cursor.toArray(); 
             res.send(result); 
@@ -89,6 +87,10 @@ async function run() {
         }
         let query = {};
         let cursor = volunteerdatabase.find(query);
+        if (limit) {
+          cursor = volunteerdatabase.find(query).sort({ deadline: 1 }).limit(parseInt(limit)); 
+        }
+       
 
         const result = await cursor.toArray(); 
         res.send(result); 
