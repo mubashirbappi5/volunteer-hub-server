@@ -1,16 +1,21 @@
 require('dotenv').config();
 const express = require('express')
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
-const cors = require('cors')
+
 
 const app = express()
 const port = process.env.PORT ||8000
 
 app.use(cookieParser());
 app.use(cors({
-  origin:['http://localhost:5174'],
+  origin:['http://localhost:5175',
+    'https://volunteer-hub-auth.web.app',
+    'https://volunteer-hub-auth.firebaseapp.com'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials:true
 }
 ))
@@ -34,7 +39,7 @@ jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = "mongodb+srv://volunteer-hub:nb3Uoob7Qhhh6Urx@cluster0.ig6ro.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ig6ro.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -53,7 +58,7 @@ async function run() {
      
 
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
 
    
@@ -170,13 +175,19 @@ async function run() {
     })
     app.delete('/volunteer/:id',verifyToken,async(req,res)=>{
       const id = req.params.id
+      
       const quary = {_id: new ObjectId(id)}
       const volunteer =  await BeVolunteerdatabase.findOne(quary )
+      const postId = volunteer.postId
       if (req.user.email !== volunteer.volunteer_email) {
         return res.status(403).send({ message: 'forbidden access' });
       }
-      
+      const filter = { _id: new ObjectId(postId) };
       const result = await BeVolunteerdatabase.deleteOne(quary)
+      const update = { $inc: { volunteers_needed: +1 } };
+      const updateneed = await volunteerdatabase.updateOne( filter, update);
+      
+     
       
       res.send(result)
     })
@@ -189,19 +200,22 @@ async function run() {
     res
      .cookie('token',token,{
       httpOnly:true,
-      secure:false,
+      
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
      })
      .send({success: true})
    })
    app.post('/signout',async(req,res)=>{
     res.clearCookie('token',{
       httpOnly:true,
-      secure:false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
     })
     .send({success: true})
    })
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
