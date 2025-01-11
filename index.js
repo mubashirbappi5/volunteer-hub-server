@@ -11,7 +11,7 @@ const port = process.env.PORT ||8000
 
 app.use(cookieParser());
 app.use(cors({
-  origin:['http://localhost:5175',
+  origin:['http://localhost:5173',
     'https://volunteer-hub-auth.web.app',
     'https://volunteer-hub-auth.firebaseapp.com'
   ],
